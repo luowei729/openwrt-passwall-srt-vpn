@@ -119,16 +119,19 @@ _M.geoview = {
 _M["srt-vpn"] = {
 	name = "SRT-VPN",
 	repo = "luowei729/srt-vpn",
-	-- 注意：srt-vpn 二进制发布在自己仓库 luowei729/srt-vpn，不在官方 api-cache 里，
-	--       因此 get_url 直接查 GitHub API releases/latest（返回单个对象，非数组；
-	--       to_check 中 #json==0 不会误取 json[1]，直接使用对象本身）。
-	--       若 future openwrt-passwall-packages 缓存了 srt-vpn，可换回 gh_release_url。
+	-- 2026-08-19 修复：改为访问自己 Release 上的固定元数据 JSON（github.com 域）。
+	-- 背景：旧实现直接查 api.github.com/repos/.../releases/latest，国内网络
+	--       api.github.com 被墙 -> 组件更新一直"更新中"。
+	-- 现在：srt-vpn release.yml 会把元数据（tag_name + assets）作为
+	--       srt-vpn-release-api.json 上传到每个 Release，
+	--       通过 releases/latest/download/ 动态访问（与官方 api-cache 同机制，
+	--       可在"组件更新"开启 GitHub Proxy 后走 gh-proxy.org 镜像）。
 	get_url = function(self)
-		return "https://api.github.com/repos/" .. self.repo .. "/releases/latest"
+		return "https://github.com/" .. self.repo .. "/releases/latest/download/srt-vpn-release-api.json"
 	end,
-	-- 本地版本：srt-vpn -V 输出 "srt-vpn 0.1.0"，取第 2 段得纯版本号
+	-- 本地版本：srt-vpn -V 输出 "srt-vpn 0.2.0"，取第 2 段得纯版本号
 	cmd_version = "-V | awk '{print $2}'",
-	-- 远程 tag 如 v0.2.0，去掉 "v" 前缀便于与本地 0.1.0 比较
+	-- 远程 tag 如 v0.2.0，去掉 "v" 前缀便于与本地 0.2.0 比较
 	remote_version_str_replace = "v",
 	-- 二进制直接以 release asset 形式分发（无压缩包），passwall 下载后 mv 即可
 	zipped = false,
