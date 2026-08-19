@@ -8,7 +8,35 @@
 * 向机场获取 `pinnedPeerCertSha256`（`pcs` 参数）；
 * 或切换至 Sing-box Core。  
 
-## 📌如何能编译到最新代码？
+## � 新增核心：SRT-VPN（本仓库扩展）
+
+本仓库在官方 passwall 基础上**最小侵入**集成 [luowei729/srt-vpn](https://github.com/luowei729/srt-vpn) 作为新核心：
+
+- **组件更新**：`PassWall -> 组件更新` 页新增 **SRT-VPN** 条目，点击可检查/下载最新核心（`srt-vpn-linux-amd64/arm64` 纯静态二进制，自动匹配架构）
+- **节点类型**：`节点列表 -> 添加` 新增 **SRT-VPN** 类型，配置 SRT 服务器地址/端口/passphrase 等参数
+- **使用前提**：需有一台 SRT-VPN 服务端（见 srt-vpn 仓库部署文档）
+- **接入原理**：srt-vpn 客户端是本地 SOCKS5/HTTP/HTTPS 三合一入口，passwall 通过 socks → ipt2socks 链路做透明代理
+
+```shell
+# 组件更新页下载核心后，服务端配置示例（SRT-VPN 服务端侧）
+SRT_MODE=server SRT_PASSPHRASE=你的强密码 SRT_LISTEN=0.0.0.0:9000
+```
+
+### 同步官方上游
+
+本扩展全部改动集中在以下文件（sync fork 官方 openwrt-passwall 时冲突极小）：
+
+```
+luci-app-passwall/luasrc/passwall/com.lua                 # +srt-vpn 组件条目
+luci-app-passwall/luasrc/passwall/util_srt-vpn.lua        # 新增：生成 client.json
+luci-app-passwall/luasrc/model/cbi/passwall/client/type/7_srt-vpn.lua  # 新增：节点类型
+luci-app-passwall/root/usr/share/passwall/app.sh          # +srtvpn 分支
+luci-app-passwall/po/zh_Hans/passwall.po                  # 新增翻译
+luci-app-passwall/po/zh-cn/passwall.po                    # 新增翻译
+.github/workflows/Auto compile with openwrt sdk.yml       # +25.12 apk 编译矩阵
+```
+
+## �📌如何能编译到最新代码？
 
 ### 方法1：
 

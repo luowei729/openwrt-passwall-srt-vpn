@@ -123,6 +123,13 @@ jobs:
 
           - container_tag: x86-64-SNAPSHOT
             ver: "25.12+"
+
+          # 2026-08-19: OpenWrt 25.12 正式版（apk 包格式）
+          # 25.12 起 OpenWrt 全面切换到 apk 包管理器（OpenWrt 24.10 后 apk 可用，25.12 为默认）
+          # SDK 镜像 tag 命名：x86_64-25.12-SNAPSHOT（见 docker.io/openwrt/sdk tags）
+          # 产物为 .apk 格式，下方 find "luci-app-passwall*" 同时匹配 .ipk/.apk，无需额外处理
+          - container_tag: x86_64-25.12-SNAPSHOT
+            ver: "25.12-apk-"
     steps:
       - name: Checkout
         uses: actions/checkout@main

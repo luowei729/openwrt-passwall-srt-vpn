@@ -15,6 +15,7 @@ UTIL_SS=$LUA_UTIL_PATH/util_shadowsocks.lua
 UTIL_XRAY=$LUA_UTIL_PATH/util_xray.lua
 UTIL_NAIVE=$LUA_UTIL_PATH/util_naiveproxy.lua
 UTIL_HYSTERIA2=$LUA_UTIL_PATH/util_hysteria2.lua
+UTIL_SRTVPN=$LUA_UTIL_PATH/util_srt-vpn.lua
 SINGBOX_BIN=$(first_type $(config_t_get global_app sing_box_file) sing-box)
 XRAY_BIN=$(first_type $(config_t_get global_app xray_file) xray)
 
@@ -496,6 +497,24 @@ run_socks() {
 		json_add_string "local_socks_port" "$socks_port"
 		lua $UTIL_HYSTERIA2 gen_config "$(json_dump)" > $config_file
 		[ -n "$no_run" ] || ln_run "$(first_type $(config_t_get global_app hysteria_file))" "hysteria" $log_file -c "$config_file" client
+	;;
+	srtvpn)
+		# SRT-VPN：客户端是本地 SOCKS5/HTTP/HTTPS 三合一入口（同一端口首字节嗅探），
+		# 经 SRT 加密隧道连服务端。
+		# 启动方式：util_srt-vpn.lua 生成 client.json 配置 -> srt-vpn -c "$config_file"
+		# 说明：
+		#   * srt-vpn 客户端自带 HTTP/HTTPS 代理（与 SOCKS5 同端口），无需独立 http 端口，
+		#     因此不设 http_flag（若 passwall 配置了独立 http 端口，会走下方
+		#     "http to socks" 二次包装，用 sing-box/xray 包一层，功能正确）
+		#   * 本地 SOCKS5 监听端口由 passwall 分配（socks_port），写入 socks5.listen
+		json_add_string "local_socks_address" "$bind"
+		json_add_string "local_socks_port" "$socks_port"
+		json_add_string "server_host" "$server_host"
+		json_add_string "server_port" "$server_port"
+		lua $UTIL_SRTVPN gen_config "$(json_dump)" > $config_file
+		# 组件更新里该核心路径键名：app_update.lua 用 k:gsub("%-","_").."_file" 生成
+		# （sing-box -> sing_box_file），故 srt-vpn -> srt_vpn_file（下划线）
+		[ -n "$no_run" ] || ln_run "$(first_type $(config_t_get global_app srt_vpn_file) srt-vpn)" "srt-vpn" $log_file -c "$config_file"
 	;;
 	esac
 

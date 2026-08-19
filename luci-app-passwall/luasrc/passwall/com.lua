@@ -16,7 +16,8 @@ _M.order = {
 	"chinadns-ng",
 	"xray",
 	"sing-box",
-	"hysteria"
+	"hysteria",
+	"srt-vpn"
 }
 
 _M.hysteria = {
@@ -112,6 +113,35 @@ _M.geoview = {
 	file_tree = {
 		mipsel = "mipsle",
 		mips64el = "mips64le"
+	}
+}
+
+_M["srt-vpn"] = {
+	name = "SRT-VPN",
+	repo = "luowei729/srt-vpn",
+	-- 注意：srt-vpn 二进制发布在自己仓库 luowei729/srt-vpn，不在官方 api-cache 里，
+	--       因此 get_url 直接查 GitHub API releases/latest（返回单个对象，非数组；
+	--       to_check 中 #json==0 不会误取 json[1]，直接使用对象本身）。
+	--       若 future openwrt-passwall-packages 缓存了 srt-vpn，可换回 gh_release_url。
+	get_url = function(self)
+		return "https://api.github.com/repos/" .. self.repo .. "/releases/latest"
+	end,
+	-- 本地版本：srt-vpn -V 输出 "srt-vpn 0.1.0"，取第 2 段得纯版本号
+	cmd_version = "-V | awk '{print $2}'",
+	-- 远程 tag 如 v0.2.0，去掉 "v" 前缀便于与本地 0.1.0 比较
+	remote_version_str_replace = "v",
+	-- 二进制直接以 release asset 形式分发（无压缩包），passwall 下载后 mv 即可
+	zipped = false,
+	default_path = "/usr/bin/srt-vpn",
+	-- 匹配文件名：srt-vpn-linux-amd64 / srt-vpn-linux-arm64（release.yml 固定命名）
+	match_fmt_str = "srt%-vpn%-linux%-%s",
+	file_tree = {
+		x86_64  = "amd64",
+		x86     = "amd64",
+		aarch64 = "arm64",
+		rockchip = "arm64",
+		armv8   = "arm64",
+		riscv64 = "riscv64"
 	}
 }
 

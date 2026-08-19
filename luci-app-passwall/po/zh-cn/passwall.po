@@ -2165,3 +2165,135 @@ msgstr "密码套件"
 
 msgid "Configures the list of supported cipher suites, separated by :"
 msgstr "配置支持的密码套件列表，以冒号 (:) 分隔。"
+
+msgid "SRT Server Address (Support Domain Name)"
+msgstr "SRT 服务器地址（支持域名）"
+
+msgid "必填。SRT-VPN 服务端地址，如 vpn.example.com 或 1.2.3.4"
+msgstr "必填。SRT-VPN 服务端地址，如 vpn.example.com 或 1.2.3.4"
+
+msgid "SRT Server Port"
+msgstr "SRT 服务器端口"
+
+msgid "必填。SRT-VPN 服务端端口（默认 9000，须与服务端 listen 一致）"
+msgstr "必填。SRT-VPN 服务端端口（默认 9000，须与服务端 listen 一致）"
+
+msgid "SRT Passphrase (Encryption Key)"
+msgstr "SRT 加密密钥（Passphrase）"
+
+msgid "必填。SRT 隧道加密密码（10-79 字符），两端必须一致"
+msgstr "必填。SRT 隧道加密密码（10-79 字符），两端必须一致"
+
+msgid "Crypto (Encryption Strength)"
+msgstr "加密强度（Crypto）"
+
+msgid "Keep default"
+msgstr "保持默认"
+
+msgid "可选。加密强度，默认 aes-128，须与服务端一致"
+msgstr "可选。加密强度，默认 aes-128，须与服务端一致"
+
+msgid "Streamid (Camouflage Token)"
+msgstr "Streamid（伪装令牌）"
+
+msgid "可选。SRT streamid 伪装令牌，不填使用内置默认格式（r=live/srtvpn,m=video）"
+msgstr "可选。SRT streamid 伪装令牌，不填使用内置默认格式（r=live/srtvpn,m=video）"
+
+msgid "Local SOCKS5 Username"
+msgstr "本地 SOCKS5 用户名"
+
+msgid "可选。本地 SOCKS5 代理认证用户名，留空则不认证"
+msgstr "可选。本地 SOCKS5 代理认证用户名，留空则不认证"
+
+msgid "Local SOCKS5 Password"
+msgstr "本地 SOCKS5 密码"
+
+msgid "可选。本地 SOCKS5 代理认证密码"
+msgstr "可选。本地 SOCKS5 代理认证密码"
+
+msgid "Reconnect Interval (seconds)"
+msgstr "自动重连间隔（秒）"
+
+msgid "可选。断线自动重连间隔（秒），默认 5"
+msgstr "可选。断线自动重连间隔（秒），默认 5"
+
+msgid "Reconnect Max Retries"
+msgstr "最大重连次数"
+
+msgid "可选。最大重连次数，默认 10（-1 为无限重连）"
+msgstr "可选。最大重连次数，默认 10（-1 为无限重连）"
+
+msgid "Heartbeat Interval (seconds)"
+msgstr "心跳间隔（秒）"
+
+msgid "可选。心跳间隔（秒），默认 5"
+msgstr "可选。心跳间隔（秒），默认 5"
+
+msgid "SRT-VPN"
+msgstr "SRT-VPN"
+
+msgid "SRT Server Address (Support Domain Name)"
+msgstr "SRT 服务器地址（支持域名）"
+
+msgid "必填。SRT-VPN 服务端地址，如 vpn.example.com 或 1.2.3.4"
+msgstr "必填。SRT-VPN 服务端地址，如 vpn.example.com 或 1.2.3.4"
+
+msgid "SRT Server Port"
+msgstr "SRT 服务器端口"
+
+msgid "必填。SRT-VPN 服务端端口（默认 9000，须与服务端 listen 一致）"
+msgstr "必填。SRT-VPN 服务端端口（默认 9000，须与服务端 listen 一致）"
+
+msgid "SRT Passphrase (Encryption Key)"
+msgstr "SRT 加密密钥（Passphrase）"
+
+msgid "必填。SRT 隧道加密密码（10-79 字符），两端必须一致"
+msgstr "必填。SRT 隧道加密密码（10-79 字符），两端必须一致"
+
+msgid "Crypto (Encryption Strength)"
+msgstr "加密强度（Crypto）"
+
+msgid "Keep default"
+msgstr "保持默认"
+
+msgid "可选。加密强度，默认 aes-128，须与服务端一致"
+msgstr "可选。加密强度，默认 aes-128，须与服务端一致"
+
+msgid "Streamid (Camouflage Token)"
+msgstr "Streamid（伪装令牌）"
+
+msgid "可选。SRT streamid 伪装令牌，不填使用内置默认格式（r=live/srtvpn,m=video）"
+msgstr "可选。SRT streamid 伪装令牌，不填使用内置默认格式（r=live/srtvpn,m=video）"
+
+msgid "Local SOCKS5 Username"
+msgstr "本地 SOCKS5 用户名"
+
+msgid "可选。本地 SOCKS5 代理认证用户名，留空则不认证"
+msgstr "可选。本地 SOCKS5 代理认证用户名，留空则不认证"
+
+msgid "Local SOCKS5 Password"
+msgstr "本地 SOCKS5 密码"
+
+msgid "可选。本地 SOCKS5 代理认证密码"
+msgstr "可选。本地 SOCKS5 代理认证密码"
+
+msgid "Reconnect Interval (seconds)"
+msgstr "自动重连间隔（秒）"
+
+msgid "可选。断线自动重连间隔（秒），默认 5"
+msgstr "可选。断线自动重连间隔（秒），默认 5"
+
+msgid "Reconnect Max Retries"
+msgstr "最大重连次数"
+
+msgid "可选。最大重连次数，默认 10（-1 为无限重连）"
+msgstr "可选。最大重连次数，默认 10（-1 为无限重连）"
+
+msgid "Heartbeat Interval (seconds)"
+msgstr "心跳间隔（秒）"
+
+msgid "可选。心跳间隔（秒），默认 5"
+msgstr "可选。心跳间隔（秒），默认 5"
+
+msgid "SRT-VPN"
+msgstr "SRT-VPN"
