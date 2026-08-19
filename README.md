@@ -33,8 +33,21 @@ luci-app-passwall/luasrc/model/cbi/passwall/client/type/7_srt-vpn.lua  # 新增�
 luci-app-passwall/root/usr/share/passwall/app.sh          # +srtvpn 分支
 luci-app-passwall/po/zh_Hans/passwall.po                  # 新增翻译
 luci-app-passwall/po/zh-cn/passwall.po                    # 新增翻译
-.github/workflows/Auto compile with openwrt sdk.yml       # +25.12 apk 编译矩阵
+.github/workflows/Auto compile with openwrt sdk.yml       # +25.12 apk 编译矩阵 + push tag/release 自动发版编译
 ```
+
+### 发布新版本（自动编译产出）
+
+打 tag 即自动编译并挂到该版本 Release（无需手动操作）：
+
+```shell
+git tag -a 26.8.21 -m "PassWall 26.8.21"
+git push origin 26.8.21
+```
+
+- 触发方式：`push tag` / 网页发布 Release / 手动 workflow_dispatch（可选版本号）
+- 自动编译 4 个目标：22.03-（ipk）、23.05-24.10（ipk）、25.12+（apk）、25.12-apk-（apk）
+- 产物自动挂到 `https://github.com/luowei729/openwrt-passwall-srt-vpn/releases/tag/<版本号>`
 
 ## �📌如何能编译到最新代码？
 
