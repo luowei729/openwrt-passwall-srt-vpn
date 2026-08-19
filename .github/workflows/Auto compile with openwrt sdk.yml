@@ -3,15 +3,26 @@
 # Copyright (C) 2026 Openwrt-Passwall Organization
 # Description: Auto compile
 #
+# 2026-08-19 改造：发布新版本自动编译产出
+# - push 版本 tag（如 26.8.20）→ 自动编译 4 个目标（ipk/apk）→ 自动创建/更新该 tag 的 Release 挂产物
+# - 在 GitHub 网页发布 Release → 自动触发编译 → 产物挂到该 Release
+# - 保留手动 workflow_dispatch（可选填版本号，留空用 Makefile PKG_VERSION）
 name: "Auto compile with openwrt sdk"
 on:
-  repository_dispatch:
+  # 网页/API 发布 Release 时自动编译
+  release:
+    types: [published]
+  # push 任意 tag 视为发版（如 26.8.20），自动编译并挂到该 tag 的 Release
+  push:
+    tags:
+      - '*'
+  # 手动触发（可选版本号）
   workflow_dispatch:
     inputs:
-      ssh:
-        description: 'SSH connection to Actions'
+      version:
+        description: '发布版本号（如 26.8.20；留空则用 Makefile PKG_VERSION）'
         required: false
-        default: 'false'
+        default: ''
 env:
   TZ: Asia/Shanghai
   passwall: ${{ github.repository }}
@@ -27,7 +38,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       passwall_version: ${{ steps.check_version.outputs.latest_version }}
-      has_update: ${{ steps.check_version.outputs.has_update }}
       prerelease: ${{ steps.check_version.outputs.prerelease }}
     steps:
       - name: Checkout
@@ -38,33 +48,35 @@ jobs:
 
       - name: Check version
         id: check_version
-        env:
-          url_tags: https://api.github.com/repos/${{ env.passwall }}/releases/latest
         run: |
-          cd luci-app-passwall
-          latest_version=$(awk -F ':=' '/^PKG_VERSION:=|^PKG_RELEASE:=/ {print $2}' Makefile | sed ':a;N;s/\$(PKG_VERSION)-//;s/\n$//;s/\n/-/;ba')
+          # 确定发布版本号（三路触发统一在这里收敛）：
+          # 1. release 事件：直接用触发的 tag（github.ref_name = tag 名）
+          # 2. push tag 事件：github.ref_name = tag 名（如 26.8.20）
+          # 3. workflow_dispatch：优先 inputs.version，留空读 Makefile PKG_VERSION-PKG_RELEASE
+          if [ "${{ github.event_name }}" = "release" ] || [ "${{ github.event_name }}" = "push" ]; then
+            latest_version="${{ github.ref_name }}"
+          elif [ -n "${{ github.event.inputs.version }}" ]; then
+            latest_version="${{ github.event.inputs.version }}"
+          else
+            cd luci-app-passwall
+            latest_version=$(awk -F ':=' '/^PKG_VERSION:=|^PKG_RELEASE:=/ {print $2}' Makefile | sed ':a;N;s/\$(PKG_VERSION)-//;s/\n$//;s/\n/-/;ba')
+          fi
+          echo "版本号: ${latest_version}"
           echo "latest_version=${latest_version}" >> $GITHUB_OUTPUT
 
-          prerelease=$([ "${{ github.ref_name }}" == "main" ] && echo false || echo true)
+          # prerelease 判定：release 事件直接取对象的 prerelease 属性；
+          # push tag / 手动触发：tag 含 rc/beta/alpha/pre 视为预发布
+          if [ "${{ github.event_name }}" = "release" ]; then
+            prerelease="${{ github.event.release.prerelease }}"
+          else
+            case "${latest_version}" in
+              *rc*|*beta*|*alpha*|*pre*) prerelease=true ;;
+              *) prerelease=false ;;
+            esac
+          fi
           echo "prerelease=${prerelease}" >> $GITHUB_OUTPUT
 
-          remote_latest_version=$(wget -qO- -t1 -T2 ${{env.url_tags}} | jq -r '.tag_name')
-
-          if [ -z "$remote_latest_version" ] || [ "$remote_latest_version" = "null" ]; then
-            echo "Failed to fetch remote tags"
-            echo "has_update=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          echo "Remote latest: $remote_latest_version"
-
-          if [ "$latest_version" = "$remote_latest_version" ]; then
-            echo "has_update=false" >> $GITHUB_OUTPUT
-          else
-            echo "has_update=true" >> $GITHUB_OUTPUT
-          fi
-
       - name: Prepare release
-        if: steps.check_version.outputs.has_update == 'true'
         run: |
           echo "![](https://img.shields.io/github/downloads/${{ env.passwall }}/${{steps.check_version.outputs.latest_version}}/total?style=flat-square)" >> release.txt
           echo "## :mega: 获取其他软件包 / How to Get Other Packages" >>release.txt
@@ -94,22 +106,20 @@ jobs:
           echo "- Replace /path/to/package with the actual path of the downloaded packages." >>release.txt
           touch release.txt
 
-      - name: Generate new tag & release
-        if: steps.check_version.outputs.has_update == 'true'
-        uses: softprops/action-gh-release@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # 2026-08-19 新增：把 release.txt 作为 artifact 传给 build job 作为 Release body
+      - name: Upload release body artifact
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: ${{steps.check_version.outputs.latest_version}}
-          target_commitish: ${{ github.ref_name }}
-          prerelease: ${{steps.check_version.outputs.prerelease}}
-          body_path: release.txt
+          name: release-body
+          path: release.txt
+          if-no-files-found: error
 
 
   job_build_passwall:
     name: Build passwall [${{ matrix.ver }}]
     needs: job_check
-    if: needs.job_check.outputs.has_update == 'true'
+    # 2026-08-19 改造：发布动作（release 事件 / push tag / 手动指定版本）必编译，
+    # 不再做 has_update 远程版本对比（push 新 tag 即为发布，允许重复手动编译覆盖产物）
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -133,6 +143,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@main
+
+      # 2026-08-19 新增：下载 job_check 生成的 Release body（release.txt）
+      - name: Download release body
+        uses: actions/download-artifact@v4
+        with:
+          name: release-body
+          path: release-body
 
       - name: Generate .config for Language Packs
         run: |
@@ -165,10 +182,18 @@ jobs:
           
           echo "status=success" >> $GITHUB_OUTPUT
       - name: Upload to release
+        # 2026-08-19 改造：产物挂到发布版本下的 Release
+        # - release 事件：挂到已发布的 Release（tag 存在，只追加文件）
+        # - push tag / 手动：softprops 自动创建该 tag 的 Release
+        # 注意：4 个矩阵 job 并行上传同一 Release，softprops v3 幂等追加文件；
+        #       body 用 job_check 传来的 release.txt
         uses: softprops/action-gh-release@v3
         if: steps.compile.outputs.status == 'success'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{needs.job_check.outputs.passwall_version}}
+          name: PassWall ${{needs.job_check.outputs.passwall_version}}
+          body_path: release-body/release.txt
+          prerelease: ${{needs.job_check.outputs.prerelease}}
           files: ${{ github.workspace }}/upload/*
