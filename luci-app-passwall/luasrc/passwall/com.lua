@@ -137,7 +137,10 @@ _M["srt-vpn"] = {
 	zipped = false,
 	default_path = "/usr/bin/srt-vpn",
 	-- 匹配文件名：srt-vpn-linux-amd64 / srt-vpn-linux-arm64（release.yml 固定命名）
-	match_fmt_str = "srt%-vpn%-linux%-%s",
+	-- 注意：必须用 双 %% 转义（Lua string.format 里 %% -> %），
+	--       与 sing-box 的 "linux%%-%s" 写法一致；单 %- 会在 string.format 报
+	--       "invalid option '%v' to 'format'"（2026-08-20 路由器实测踩坑）
+	match_fmt_str = "srt%%-vpn%%-linux%%-%s",
 	file_tree = {
 		x86_64  = "amd64",
 		x86     = "amd64",
