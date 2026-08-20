@@ -21,15 +21,17 @@
 --   * var["local_socks_address"/"local_socks_port"]：passwall 分配的本地 SOCKS5 监听
 --   * node.srtvpn_*：节点类型 7_srt-vpn.lua 保存的私有字段（带 srtvpn_ 前缀）
 --
--- srt-vpn 配置字段说明（字段名与 README 配置映射表一致）：
+-- srt-vpn 配置字段说明（2026-08-20 重构后更新）：
 --   mode:       固定 "client"
 --   server:     服务端 IP:端口（必填）
---   passphrase: SRT 隧道加密密码（必填，两端一致）
---   crypto:     加密强度 aes-128/192/256（默认 aes-128）
---   streamid:   可选伪装令牌（默认内置格式，可不填）
+--   passphrase: SRT 隧道加密密码（必填，两端一致，由其派生 AES-128-CTR 密钥）
+--   pool_size:  多连接池大小（1..=16，默认 4，B 方案多连接多带宽）
 --   socks5:     本地监听（三合一入口，可带用户名密码）
 --   reconnect:  自动重连（默认 5s 间隔、10 次）
 --   heartbeat_secs: 心跳间隔（默认 5s）
+-- 已废弃字段（保留 uci 向后兼容但不写入 config）：
+--   crypto:   重构后加密统一 AES-128-CTR 由 passphrase 派生（不再分 128/192/256）
+--   streamid: 重构后静态令牌已删（认证用 SRT 特征握手密钥派生）
 -- ============================================================
 module("luci.passwall.util_srt-vpn", package.seeall)
 local api = require "luci.passwall.api"
@@ -57,12 +59,15 @@ function gen_config(var)
 	end
 
 	-- srt-vpn 客户端三合一：socks5.listen 即 HTTP/HTTPS 入口，无需再传 http 端口
+	-- 2026-08-20 适配重构后新内核：
+	--   * crypto/streamid 已废弃（重构后加密统一 AES-128-CTR 由 passphrase 派生，
+	--     streamid 静态令牌已删）。保留 uci 字段向后兼容但不写入 config。
 	local config = {
 		mode = "client",
 		server = server_host .. ":" .. (server_port or "9000"),
 		passphrase = node.srtvpn_passphrase,
-		crypto = (node.srtvpn_crypto and node.srtvpn_crypto ~= "") and node.srtvpn_crypto or nil,
-		streamid = (node.srtvpn_streamid and node.srtvpn_streamid ~= "") and node.srtvpn_streamid or nil,
+		-- pool_size: 多连接池大小（默认 4，可改 SRT_POOL_SIZE env；P1.5 配置化）
+		pool_size = tonumber(node.srtvpn_pool_size) or nil,
 		socks5 = {
 			listen = local_socks_address .. ":" .. (local_socks_port or "1080"),
 			username = (local_socks_username and local_socks_username ~= "") and local_socks_username or nil,

@@ -67,18 +67,18 @@ o.password = true
 o.rewrite_option = _n(o.option)
 o.description = translate("必填。SRT 隧道加密密码（10-79 字符），两端必须一致")
 
-o = s:option(ListValue, "crypto", translate("Crypto (Encryption Strength)"))
+o = s:option(ListValue, "crypto", translate("Crypto (Deprecated)"))
 o:value("", translate("Keep default"))
 o:value("aes-128", "AES-128")
 o:value("aes-192", "AES-192")
 o:value("aes-256", "AES-256")
 o.default = ""
 o.rewrite_option = _n(o.option)
-o.description = translate("可选。加密强度，默认 aes-128，须与服务端一致")
+o.description = translate("已废弃（重构后加密统一 AES-128-CTR 由 passphrase 派生）。保留该选项仅为向后兼容，实际不生效")
 
-o = s:option(Value, "streamid", translate("Streamid (Camouflage Token)"))
+o = s:option(Value, "streamid", translate("Streamid (Deprecated)"))
 o.rewrite_option = _n(o.option)
-o.description = translate("可选。SRT streamid 伪装令牌，不填使用内置默认格式（r=live/srtvpn,m=video）")
+o.description = translate("已废弃（重构后静态令牌已删，认证用 SRT 特征握手密钥派生）。保留仅为向后兼容，实际不生效")
 
 -- * 本地 SOCKS5 入口认证（可空=无认证）
 o = s:option(Value, "socks_username", translate("Local SOCKS5 Username"))
@@ -89,6 +89,14 @@ o = s:option(Value, "socks_password", translate("Local SOCKS5 Password"))
 o.password = true
 o.rewrite_option = _n(o.option)
 o.description = translate("可选。本地 SOCKS5 代理认证密码")
+
+-- * 自动重连与心跳（不填保持默认）
+o = s:option(Value, "pool_size", translate("Pool Size (Connections)"))
+o.datatype = "uinteger"
+o.default = "4"
+o.rmempty = false
+o.rewrite_option = _n(o.option)
+o.description = translate("多连接池大小（1..=16，默认 4）。多连接多带宽，软路由推荐 4-8")
 
 -- * 自动重连与心跳（不填保持默认）
 o = s:option(Value, "reconnect_interval", translate("Reconnect Interval (seconds)"))
