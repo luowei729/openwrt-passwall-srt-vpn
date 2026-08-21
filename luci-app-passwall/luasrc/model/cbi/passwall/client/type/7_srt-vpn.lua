@@ -90,13 +90,13 @@ o.password = true
 o.rewrite_option = _n(o.option)
 o.description = translate("可选。本地 SOCKS5 代理认证密码")
 
--- * 自动重连与心跳（不填保持默认）
-o = s:option(Value, "pool_size", translate("Pool Size (Connections)"))
+-- 已废弃：pool_size（v0.4.0 单 QUIC 连接多路复用，无连接池）
+o = s:option(Value, "pool_size", translate("Pool Size (Deprecated)"))
 o.datatype = "uinteger"
-o.default = "4"
-o.rmempty = false
+o.default = ""
+o.rmempty = true
 o.rewrite_option = _n(o.option)
-o.description = translate("多连接池大小（1..=16，默认 4）。多连接多带宽，软路由推荐 4-8")
+o.description = translate("已废弃（v0.4.0 单 QUIC 连接多路复用，无连接池）。保留仅为向后兼容，实际不生效")
 
 -- * 自动重连与心跳（不填保持默认）
 o = s:option(Value, "reconnect_interval", translate("Reconnect Interval (seconds)"))
