@@ -151,6 +151,17 @@ jobs:
           name: release-body
           path: release-body
 
+      # 2026-08-21 新增：缓存 OpenWrt SDK 与 dl/ccache，加速二次编译
+      - name: Cache OpenWrt SDK dl & ccache
+        uses: actions/cache@v4
+        with:
+          path: |
+            dl
+            ~/.ccache
+          key: openwrt-sdk-${{ matrix.container_tag }}-${{ hashFiles('luci-app-passwall/Makefile') }}
+          restore-keys: |
+            openwrt-sdk-${{ matrix.container_tag }}-
+
       - name: Generate .config for Language Packs
         run: |
           echo "CONFIG_ALL_NONSHARED=n" > .config

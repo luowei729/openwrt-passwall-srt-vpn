@@ -53,20 +53,26 @@ function gen_config(var)
 	local local_socks_username = var["local_socks_username"] or node.srtvpn_socks_username
 	local local_socks_password = var["local_socks_password"] or node.srtvpn_socks_password
 
-	-- IPv6 服务器地址需要中括号包裹（srt-vpn server 字段要求 ip:port 格式）
+	-- IPv6 服务器地址：srt-vpn server 字段要求 ip:port，IPv6 需 [ip]:port
+	-- get_ipv6_full 已含括号，避免双重包裹
 	if api.is_ipv6(server_host) then
-		server_host = api.get_ipv6_full(server_host)
-		server_host = "[" .. server_host .. "]"
+		local full = api.get_ipv6_full(server_host)
+		if full ~= "" then server_host = full end
 	end
 
 	-- srt-vpn 客户端三合一：socks5.listen 即 HTTP/HTTPS 入口，无需再传 http 端口
-	-- 2026-08-20 适配重构后新内核：
-	--   * crypto/streamid 已废弃（重构后加密统一 AES-128-CTR 由 passphrase 派生，
-	--     streamid 静态令牌已删）。保留 uci 字段向后兼容但不写入 config。
+	-- 单密码兼容（2026-08-21）：password 为空自动 fallback 到 passphrase，uuid 为空用默认
+	-- 日常只填 1 次 Passphrase 即可开箱；老配置已填双密码仍按原值走
+	local eff_uuid = node.srtvpn_uuid
+	if not eff_uuid or eff_uuid == "" then eff_uuid = "00000000-0000-0000-0000-000000000001" end
+	local eff_password = node.srtvpn_password
+	if not eff_password or eff_password == "" then eff_password = node.srtvpn_passphrase end
 	local config = {
 		mode = "client",
 		server = server_host .. ":" .. (server_port or "9000"),
 		passphrase = node.srtvpn_passphrase,
+		uuid = eff_uuid,
+		password = eff_password,
 		-- v0.4.0 已废弃：pool_size（单 QUIC 连接多路复用，无连接池）、crypto/streamid
 		-- 保留 uci 字段向后兼容但不写入 client.json，避免旧配置触发未知字段告警
 		socks5 = {

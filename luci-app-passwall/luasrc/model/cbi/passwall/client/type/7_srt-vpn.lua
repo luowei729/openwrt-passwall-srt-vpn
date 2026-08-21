@@ -61,11 +61,26 @@ o.datatype = "port"
 o.default = "9000"
 o.description = translate("必填。SRT-VPN 服务端端口（默认 9000，须与服务端 listen 一致）")
 
--- * 隧道安全参数（必填 passphrase）
+-- * 隧道安全参数（单密码兼容：日常只填 Passphrase 即可开箱）
 o = s:option(Value, "passphrase", translate("SRT Passphrase (Encryption Key)"))
 o.password = true
 o.rewrite_option = _n(o.option)
-o.description = translate("必填。SRT 隧道加密密码（10-79 字符），两端必须一致")
+o.description = translate("必填。线路加密与认证共用密码（单密码模式：password 默认同此值；多用户需各配独立 UUID/Password 隔离）")
+
+-- * 身份标识（单密码兼容：UUID 必填有默认值，Password 为空自动 fallback 到 Passphrase）
+o = s:option(Value, "uuid", translate("UUID (User Identity)"))
+o.datatype = "uuid"
+o.default = "00000000-0000-0000-0000-000000000001"
+o.rmempty = false
+o.rewrite_option = _n(o.option)
+o.description = translate("必填。用户身份标识（默认与新加坡服务端 users[0] 一致，多设备复用同一身份不踢人；多用户隔离需各配独立 UUID）")
+
+o = s:option(Value, "password", translate("Password (Auth, default = Passphrase)"))
+o.password = true
+o.rewrite_option = _n(o.option)
+o.placeholder = "默认同 Passphrase"
+o.rmempty = true
+o.description = translate("可选。认证密码（TUIC 认证用，留空则自动使用上方 Passphrase；需独立认证再填）")
 
 o = s:option(ListValue, "crypto", translate("Crypto (Deprecated)"))
 o:value("", translate("Keep default"))
