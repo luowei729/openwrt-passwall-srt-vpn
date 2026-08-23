@@ -12,11 +12,11 @@
 --     "srtvpn_" 前缀，util_srt-vpn.lua 用 node.srtvpn_xxx 读取
 --   * api.luci_types(s1, s) 统一处理前缀写回与类型依赖
 --
--- 参数说明：
+-- 参数说明（v0.5.0 libsrt 单连接多路复用，对应 srt-vpn src/config.rs）：
 --   address/port：SRT 服务端地址与端口（必填）
---   passphrase：隧道加密密码（必填，两端一致）
---   crypto：加密强度（aes-128/192/256，默认 aes-128）
---   streamid：可选伪装令牌（默认内置格式）
+--   passphrase：隧道加密密码（必填，两端一致，10-79字符）
+--   crypto：加密强度（aes-128/192/256，可选，默认 aes-128）
+--   streamid：可选伪装令牌（默认内置 r=live/srtvpn,m=video）
 --   socks_username/password：本地 SOCKS5 认证（可空=无认证）
 --   reconnect_interval/max：自动重连（默认 5s/10 次）
 --   heartbeat：心跳间隔（默认 5s）
@@ -61,39 +61,24 @@ o.datatype = "port"
 o.default = "9000"
 o.description = translate("必填。SRT-VPN 服务端端口（默认 9000，须与服务端 listen 一致）")
 
--- * 隧道安全参数（单密码兼容：日常只填 Passphrase 即可开箱）
+-- * 隧道安全参数（必填 passphrase）
 o = s:option(Value, "passphrase", translate("SRT Passphrase (Encryption Key)"))
 o.password = true
 o.rewrite_option = _n(o.option)
-o.description = translate("必填。线路加密与认证共用密码（单密码模式：password 默认同此值；多用户需各配独立 UUID/Password 隔离）")
+o.description = translate("必填。SRT 隧道加密密码（10-79 字符），两端必须一致")
 
--- * 身份标识（单密码兼容：UUID 必填有默认值，Password 为空自动 fallback 到 Passphrase）
-o = s:option(Value, "uuid", translate("UUID (User Identity)"))
-o.datatype = "uuid"
-o.default = "00000000-0000-0000-0000-000000000001"
-o.rmempty = false
-o.rewrite_option = _n(o.option)
-o.description = translate("必填。用户身份标识（默认与新加坡服务端 users[0] 一致，多设备复用同一身份不踢人；多用户隔离需各配独立 UUID）")
-
-o = s:option(Value, "password", translate("Password (Auth, default = Passphrase)"))
-o.password = true
-o.rewrite_option = _n(o.option)
-o.placeholder = "默认同 Passphrase"
-o.rmempty = true
-o.description = translate("可选。认证密码（TUIC 认证用，留空则自动使用上方 Passphrase；需独立认证再填）")
-
-o = s:option(ListValue, "crypto", translate("Crypto (Deprecated)"))
+o = s:option(ListValue, "crypto", translate("Crypto (Encryption Strength)"))
 o:value("", translate("Keep default"))
 o:value("aes-128", "AES-128")
 o:value("aes-192", "AES-192")
 o:value("aes-256", "AES-256")
 o.default = ""
 o.rewrite_option = _n(o.option)
-o.description = translate("已废弃（重构后加密统一 AES-128-CTR 由 passphrase 派生）。保留该选项仅为向后兼容，实际不生效")
+o.description = translate("可选。加密强度，默认 aes-128，须与服务端一致")
 
-o = s:option(Value, "streamid", translate("Streamid (Deprecated)"))
+o = s:option(Value, "streamid", translate("Streamid (Camouflage Token)"))
 o.rewrite_option = _n(o.option)
-o.description = translate("已废弃（重构后静态令牌已删，认证用 SRT 特征握手密钥派生）。保留仅为向后兼容，实际不生效")
+o.description = translate("可选。SRT streamid 伪装令牌，不填使用内置默认格式（r=live/srtvpn,m=video）")
 
 -- * 本地 SOCKS5 入口认证（可空=无认证）
 o = s:option(Value, "socks_username", translate("Local SOCKS5 Username"))
@@ -104,14 +89,6 @@ o = s:option(Value, "socks_password", translate("Local SOCKS5 Password"))
 o.password = true
 o.rewrite_option = _n(o.option)
 o.description = translate("可选。本地 SOCKS5 代理认证密码")
-
--- 已废弃：pool_size（v0.4.0 单 QUIC 连接多路复用，无连接池）
-o = s:option(Value, "pool_size", translate("Pool Size (Deprecated)"))
-o.datatype = "uinteger"
-o.default = ""
-o.rmempty = true
-o.rewrite_option = _n(o.option)
-o.description = translate("已废弃（v0.4.0 单 QUIC 连接多路复用，无连接池）。保留仅为向后兼容，实际不生效")
 
 -- * 自动重连与心跳（不填保持默认）
 o = s:option(Value, "reconnect_interval", translate("Reconnect Interval (seconds)"))
