@@ -21,16 +21,18 @@
 --   * var["local_socks_address"/"local_socks_port"]：passwall 分配的本地 SOCKS5 监听
 --   * node.srtvpn_*：节点类型 7_srt-vpn.lua 保存的私有字段（带 srtvpn_ 前缀）
 --
--- srt-vpn 配置字段说明（v0.5.0 libsrt 单连接多路复用，对应 src/config.rs）：
+-- srt-vpn 配置字段说明（2026-08-20 重构后更新）：
 --   mode:       固定 "client"
 --   server:     服务端 IP:端口（必填）
---   passphrase: SRT 隧道加密密码（必填，两端一致，10-79字符）
---   crypto:     加密强度 aes-128/192/256（可选，默认 aes-128）
---   streamid:   可选伪装令牌（默认内置 r=live/srtvpn,m=video，可不填）
+--   passphrase: SRT 隧道加密密码（必填，两端一致，由其派生 AES-128-CTR 密钥）
+--   uuid/password: TUIC 认证凭据（必填，TLS exporter 派生 token）
 --   socks5:     本地监听（三合一入口，可带用户名密码）
 --   reconnect:  自动重连（默认 5s 间隔、10 次）
 --   heartbeat_secs: 心跳间隔（默认 5s）
--- 不兼容旧 TUIC 认证字段 uuid/password（v0.4 已废弃，无需生成）
+-- 已废弃字段（保留 uci 向后兼容但不写入 config）：
+--   pool_size: 重构后单 QUIC 连接多路复用（无连接池）
+--   crypto:   重构后加密统一 AES-128-CTR 由 passphrase 派生（不再分 128/192/256）
+--   streamid: 重构后静态令牌已删（认证用 TLS exporter）
 -- ============================================================
 module("luci.passwall.util_srt-vpn", package.seeall)
 local api = require "luci.passwall.api"
@@ -59,12 +61,20 @@ function gen_config(var)
 	end
 
 	-- srt-vpn 客户端三合一：socks5.listen 即 HTTP/HTTPS 入口，无需再传 http 端口
+	-- 单密码兼容（2026-08-21）：password 为空自动 fallback 到 passphrase，uuid 为空用默认
+	-- 日常只填 1 次 Passphrase 即可开箱；老配置已填双密码仍按原值走
+	local eff_uuid = node.srtvpn_uuid
+	if not eff_uuid or eff_uuid == "" then eff_uuid = "00000000-0000-0000-0000-000000000001" end
+	local eff_password = node.srtvpn_password
+	if not eff_password or eff_password == "" then eff_password = node.srtvpn_passphrase end
 	local config = {
 		mode = "client",
 		server = server_host .. ":" .. (server_port or "9000"),
 		passphrase = node.srtvpn_passphrase,
-		crypto = (node.srtvpn_crypto and node.srtvpn_crypto ~= "") and node.srtvpn_crypto or nil,
-		streamid = (node.srtvpn_streamid and node.srtvpn_streamid ~= "") and node.srtvpn_streamid or nil,
+		uuid = eff_uuid,
+		password = eff_password,
+		-- v0.4.0 已废弃：pool_size（单 QUIC 连接多路复用，无连接池）、crypto/streamid
+		-- 保留 uci 字段向后兼容但不写入 client.json，避免旧配置触发未知字段告警
 		socks5 = {
 			listen = local_socks_address .. ":" .. (local_socks_port or "1080"),
 			username = (local_socks_username and local_socks_username ~= "") and local_socks_username or nil,
@@ -82,7 +92,7 @@ end
 
 _G.gen_config = gen_config
 
-if arg and arg[1] then
+if arg[1] then
 	local func = _G[arg[1]]
 	if func then
 		local var = nil
